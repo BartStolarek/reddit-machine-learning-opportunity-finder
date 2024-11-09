@@ -1,22 +1,23 @@
 # Reddit ML Opportunity Finder
 
-A Python script that searches Reddit for posts and comments from people looking for machine learning or AI development help. The script searches multiple relevant subreddits and saves the results to CSV files for easy review.
+A Python script that scans Reddit for discussions about potential AI/ML applications. Using fuzzy matching, it identifies posts and comments where users express interest in AI/ML solutions, helping find potential development opportunities.
 
 ## Features
 
-- Searches multiple tech and business subreddits
-- Looks for both posts and comments mentioning ML/AI needs
-- Saves results to timestamped CSV files
-- Respects Reddit's rate limits
-- Configurable search keywords and subreddits
+- Fuzzy text matching to identify AI/ML-related discussions
+- Comprehensive subreddit coverage (400+ subreddits across various categories)
+- Statistical analysis of match quality
+- Separate tracking for posts and comments
+- Rate limit compliance
+- Results saved to timestamped CSV files
 
 ## Setup
 
 ### Prerequisites
 
-- Python 3.10+
-- A Reddit account
-- Reddit API credentials (instructions below)
+- Python 3.x
+- Reddit account
+- Reddit API credentials
 
 ### Installation
 
@@ -31,21 +32,25 @@ cd reddit-ml-opportunity-finder
 pip install -r requirements.txt
 ```
 
-3. Create a Reddit application:
-   - Go to https://www.reddit.com/prefs/apps/
-   - Click "create another app" or "create application"
-   - Select "script"
-   - Fill in any name you like
-   - Set the redirect URI to `http://localhost:8080`
-   - Click "create app"
+Required packages:
+- praw
+- python-dotenv
+- pandas
+- fuzzywuzzy
+- python-Levenshtein (optional, for better performance)
 
-4. Create a `.env` file in the project root with your Reddit credentials:
-```
-REDDIT_CLIENT_ID=your_client_id          # The string under your app name
-REDDIT_CLIENT_SECRET=your_client_secret  # The string labeled 'secret'
-REDDIT_USERNAME=your_username            # Your Reddit username
-REDDIT_PASSWORD=your_password            # Your Reddit password
-REDDIT_USER_AGENT="redditdev scraper by u/your_username"
+3. Set up Reddit API credentials:
+   - Visit https://www.reddit.com/prefs/apps/
+   - Create a new application (script type)
+   - Note your client ID and secret
+
+4. Create a `.env` file with your credentials:
+```plaintext
+REDDIT_CLIENT_ID=your_client_id
+REDDIT_CLIENT_SECRET=your_client_secret
+REDDIT_USERNAME=your_username
+REDDIT_PASSWORD=your_password
+REDDIT_USER_AGENT="your user agent string"
 ```
 
 ## Usage
@@ -56,66 +61,131 @@ python script.py
 ```
 
 The script will:
-1. Search each configured subreddit
-2. Look for posts and comments matching ML/AI keywords
-3. Save results to CSV files named:
-   - `ml_opportunities_posts_[subreddit]_[timestamp].csv`
-   - `ml_opportunities_comments_[subreddit]_[timestamp].csv`
+1. Verify environment variables
+2. Initialize Reddit connection
+3. Search each subreddit for:
+   - Posts matching target phrases
+   - Comments matching target phrases
+4. Generate statistics about match quality
+5. Save results to CSV files
 
-## Customization
+### Target Phrases
 
-### Modify Subreddits
-Edit the `subreddits` list in `main()` to add or remove subreddits to search:
+Current target phrases (customizable in `get_target_phrases()`):
 ```python
-subreddits = [
-    'startups',
-    'entrepreneur',
-    'smallbusiness',
-    # Add more subreddits here
+[
+    "would be cool to have an AI for that",
+    "need a machine learning model for this",
+    "could use AI to automate this"
 ]
 ```
 
-### Modify Search Keywords
-Edit the `get_relevant_keywords()` function to modify what terms to search for:
-```python
-return [
-    "need machine learning",
-    "need ml model",
-    # Add more keywords here
-]
-```
+### Fuzzy Matching
 
-## Output Format
+The script uses fuzzy string matching with:
+- Partial ratio matching for substring matches
+- Token sort ratio for word order variations
+- Configurable threshold (default: 70%)
 
-The script generates two types of CSV files:
+## Output Files
 
-### Posts CSV
-- type: Type of content
-- title: Post title
-- text: Post content
-- url: Link to the post
-- author: Reddit username
-- score: Post score
-- created_utc: Timestamp
-- keyword_matched: Which keyword triggered this match
+### Posts CSV (`ml_opportunities_posts_[subreddit]_[timestamp].csv`):
+- `type`: Content type
+- `title`: Post title
+- `text`: Post content
+- `url`: Reddit post URL
+- `author`: Username
+- `score`: Post score
+- `created_utc`: Timestamp
 
-### Comments CSV
-- type: Type of content
-- text: Comment content
-- url: Link to the comment
-- author: Reddit username
-- score: Comment score
-- created_utc: Timestamp
-- keyword_matched: Which keyword triggered this match
+### Comments CSV (`ml_opportunities_comments_[subreddit]_[timestamp].csv`):
+- `type`: Content type
+- `text`: Comment content
+- `url`: Reddit comment URL
+- `author`: Username
+- `score`: Comment score
+- `created_utc`: Timestamp
 
-## Notes
+## Statistics
 
-- The script respects Reddit's rate limits with built-in delays
-- Results are saved with timestamps to prevent overwriting
-- Errors for individual subreddits won't stop the entire script
-- Set up a `.gitignore` file to prevent committing your `.env` file
+The script generates match quality statistics for both posts and comments:
+- Average match ratio
+- Maximum match ratio
+- Minimum match ratio
+- Standard deviation
+- Total count
+
+## Rate Limiting
+
+The script includes built-in delays:
+- 0.5 seconds between submissions
+- 5 seconds between subreddits
+
+## Subreddit Coverage
+
+The script searches an extensive list of subreddits across categories including:
+- Business/Entrepreneurship
+- Technology
+- General Interest
+- Media/Entertainment
+- Educational
+- Specific Interest Communities
+
+Full list available in the script's `subreddits` list.
+
+## Error Handling
+
+- Environment variable verification
+- Connection status checking
+- Individual subreddit failures don't stop entire script
 
 ## License
 
-MIT License# reddit-machine-learning-opportunity-finder
-# reddit-machine-learning-opportunity-finder
+MIT License
+
+## Contributing
+
+Contributions welcome! Key areas for improvement:
+- Additional target phrases
+- Subreddit list refinement
+- Match quality optimization
+- Output format enhancements
+
+---
+
+### Development Notes
+
+#### Modifying Search Criteria
+
+To modify the search criteria, edit the `get_target_phrases()` function:
+
+```python
+def get_target_phrases():
+    """Define phrases to look for"""
+    return [
+        "would be cool to have an AI for that",
+        "need a machine learning model for this",
+        "could use AI to automate this"
+        # Add more phrases here
+    ]
+```
+
+#### Adjusting Fuzzy Match Threshold
+
+The default fuzzy match threshold is 70%. To adjust this, modify the `threshold` parameter in `is_similar_to_target()`:
+
+```python
+def is_similar_to_target(text, target_phrases, threshold=70):  # Adjust threshold here
+```
+
+#### Adding New Subreddits
+
+To add new subreddits to scan, append to the `subreddits` list in the `main()` function:
+
+```python
+subreddits = [
+    'SmallBusiness',
+    'Entrepreneur',
+    # Add more subreddits here
+]
+```
